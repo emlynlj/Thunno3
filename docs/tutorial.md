@@ -2,7 +2,7 @@
 
 ## 1. The stack
 
-Thunno 2's "stack" is just a list of items which have been referenced in the program. You can push items to the stack, or pop items from the stack. You can even rotate and reverse the stack! <!-- TODO -->
+Thunno 2's "stack" is just a list of items which have been referenced in the program. You can push items to the stack, or pop items from the stack. You can even rotate and reverse the stack!
 
 ## 2. Numbers
 
@@ -45,12 +45,13 @@ Strings can be concatenated using `+`. A string can be concatenated to another s
 
 ## 5. Lists
 
-List work just like in Python. Anything between a `[` and `]` is pushed as a list.
+Anything between a `[` and `]` is pushed as a list. Elements are separated by `;` and are evaluated as Thunno 2 code.
 
 For example:
 
-* `[1,2,3,4]` pushes [1, 2, 3, 4]
-* `['abc', 123, "def"]` pushes ['abc', 123, 'def']
+* `[1;2;3;4]` pushes [1, 2, 3, 4]
+* `["abc"; 123.456; 'x]` pushes ["abc", 123, "x"]
+* `[1; [2; [3; [4]]]]` pushes [1, [2, [3, [4]]]]
 
 ## 6. Vectorisation
 
@@ -123,3 +124,86 @@ Note that if you use explicit printing (`£`), the implicit output will be disab
 ## 9. Overloading
 
 Thunno 2 uses type overloading, which means that some commands behave differently when passed different types. For example, the [`C` command](https://github.com/Thunno/Thunno2/blob/main/docs/commands.md#c-chr--ord) is `chr` when given a number and `ord` when given a string. All overloads are documented in [`commands.md`](https://github.com/Thunno/Thunno2/blob/main/docs/commands.md).
+
+## 10. Loops (1)
+
+While vectorisation will help you with lists, it won't be what you need all the time. So, Thunno 2 has FOR, WHILE, FOREVER, and MAP loops.
+
+A `for` loop looks like this:
+
+```
+{ CODE }
+```
+
+A `while` loop looks like this:
+
+```
+( CONDITION ; BODY )
+```
+
+A `forever` loop looks like this:
+
+```
+⁽ CODE ⁾
+```
+
+A `map` loop looks like this:
+
+```
+ı CODE ;
+```
+
+## 11. Loops (2)
+
+Alright, but what do those loops actually do?
+
+A `for` loop can do two different things:
+
+* If given a string or a list, it executes `CODE` with each item of that string or list
+* If given a number, it executes `CODE` that many times
+
+A `while` loop does this:
+
+* Until `CONDITION` returns False, execute `BODY`
+
+A `forever` loop does this:
+
+* Forever, execute `CODE`
+
+A `map` loop does this:
+
+* For each item of the given object, it executes `CODE` and collects all the results in a list
+
+(Note: if given a number, `map` will convert it to a range.)
+
+## 12. Other structures (1)
+
+This is `filter`:
+  
+* <pre><code>æ CONDITION ;</code></pre>
+
+* This only keeps items from the given object if `CONDITION` returns True.
+
+This is `sort by`:
+
+* <pre><code>Þ CODE ;</code></pre>
+
+* This sorts the object by the result of `CODE`.
+
+This is `group by`:
+
+* <pre><code>Ñ CODE ;</code></pre>
+
+* This groups items of the object for which `CODE` has the same result together.
+
+## 13. Other structures (2)
+
+`filter`, `sort by`, and `group by` all also have single-function versions. They take only one command and require no closing delimiter.
+
+They are `œ`, `þ`, and `ñ` respectively.
+
+## 14. Challenges
+
+You are now ready for your first Thunno 2 challenge!
+
+*(Challenges coming soon)*

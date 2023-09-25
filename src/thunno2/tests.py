@@ -125,6 +125,10 @@ express Statement of Purpose.
     this CC0 or use of the Work.
 """
 
+import time
+
+start = time.time()
+
 tests_counter = 0
 tested_commands = []
 
@@ -137,12 +141,16 @@ UNTESTABLE = [
     "ÆC",
     "ÆD",
     "ÆE",
+    "ÆL",
+    "ÆN",
     "ÆR",
     "ÆS",
     "ÆT",
     "Æc",
+    "Æl",
     "Æs",
     "Æt",
+    "Æḷ",
 ]
 
 
@@ -176,7 +184,6 @@ assert_eq(call("A", ""), 0)
 assert_eq(call("A", ["a", ["b", ["1", ["2"]]]]), [1, [1, [0, [0]]]])
 
 assert_eq(call("A", ["abc", 123, "123", -0.123]), [1, 123, 0, 0.123])
-assert_eq(call("A"), 0)
 
 # B
 
@@ -500,7 +507,6 @@ assert_eq(call("c", 5, 10), 252)
 assert_eq(call("c", 10, 20), 184756)
 
 assert_eq(call("c", "abc", "abcbabcbabcba"), 3)
-assert_eq(call("c", [123, 321], "1232123212321"), [3, 3])
 
 assert_eq(call("c", 1, [1, 2, 3, 2, 1, 2, 3]), 2)
 assert_eq(call("c", [1, "a"], [1, "a", 1, "b", 1, "c"]), [3, 1])
@@ -623,10 +629,62 @@ assert_eq(call("p", "abc"), 941094)
 
 assert_eq(call("p", [1, 2, "abc", 3]), 6)
 
+# q
+
+assert_eq(
+    call("q", 3), [[1, 2, 3], [1, 3, 2], [2, 1, 3], [2, 3, 1], [3, 1, 2], [3, 2, 1]]
+)
+assert_eq(call("q", -2.1), [[-1, -2], [-2, -1]])
+
+assert_eq(call("q", ""), [])
+assert_eq(
+    call("q", "abcd"),
+    [
+        "abcd",
+        "abdc",
+        "acbd",
+        "acdb",
+        "adbc",
+        "adcb",
+        "bacd",
+        "badc",
+        "bcad",
+        "bcda",
+        "bdac",
+        "bdca",
+        "cabd",
+        "cadb",
+        "cbad",
+        "cbda",
+        "cdab",
+        "cdba",
+        "dabc",
+        "dacb",
+        "dbac",
+        "dbca",
+        "dcab",
+        "dcba",
+    ],
+)
+
+assert_eq(call("q", 0), [])
+assert_eq(
+    call("q", [123, 456, 789]),
+    [
+        [123, 456, 789],
+        [123, 789, 456],
+        [456, 123, 789],
+        [456, 789, 123],
+        [789, 123, 456],
+        [789, 456, 123],
+    ],
+)
+
 # r
 
 assert_eq(call("r", 1.23), 32.1)
 assert_eq(call("r", -456), "654-")
+assert_eq(call("r", 3210), 123)
 
 assert_eq(call("r", "abcd"), "dcba")
 assert_eq(call("r", ""), "")
@@ -1214,13 +1272,14 @@ assert_eq(call("|", [-1, 0, 1], ["abc", "def", ""]), ["abc", "def", 1])
 
 # ^
 
-assert_eq(call("^", 123, 456), 0)
-assert_eq(call("^", 123, 0), 1)
+assert_eq(call("^", 12345), [1, 3, 5], [2, 4])
+assert_eq(call("^", -6.789), [6, 8], [7, 9])
 
-assert_eq(call("^", -123, "abc"), 0)
-assert_eq(call("^", "xyz", 0), 1)
+assert_eq(call("^", "abcdef"), "ace", "bdf")
+assert_eq(call("^", "xyz"), "xz", "y")
 
-assert_eq(call("^", [-1, 0, 1], ["abc", "def", ""]), [0, 1, 1])
+assert_eq(call("^", [1, 2, 3, 4]), [1, 3], [2, 4])
+assert_eq(call("^", []), [], [])
 
 # ~
 
@@ -1249,6 +1308,17 @@ assert_eq(call("ȧ", "x", "abc", 11), "abx")
 
 assert_eq(call("ȧ", "abc", "def", "ghijkl"), "ghiabckl")
 assert_eq(call("ȧ", 123, 4, 56789), [5, 6, 7, 8, 123])
+
+assert_eq(
+    call("ȧ", [9, 10, 11], [2, 4, 6], [1, 2, 3, 4, 5, 6, 7, 8]),
+    [1, 2, 9, 4, 10, 6, 11, 8],
+)
+assert_eq(call("ȧ", 9, [2, 4, 6], [1, 2, 3, 4, 5, 6, 7, 8]), [1, 2, 9, 4, 9, 6, 9, 8])
+
+assert_eq(
+    call("ȧ", [9, 10, 11], 2, [1, 2, 3, 4, 5, 6, 7, 8]),
+    [1, 2, [9, 10, 11], 4, 5, 6, 7, 8],
+)
 
 # ḃ
 
@@ -1383,7 +1453,7 @@ assert_eq(
 )
 assert_eq(
     call("ṗ", "xyz", 2),
-    [["x", "y"], ["x", "z"], ["y", "x"], ["y", "z"], ["z", "x"], ["z", "y"]],
+    ["xy", "xz", "yx", "yz", "zx", "zy"],
 )
 assert_eq(
     call("ṗ", 10, [1, 2, 3]),
@@ -1549,6 +1619,12 @@ assert_eq(
 
 # Ṇ
 
+assert_eq(
+    call(
+        "Ṇ", "ZYXWVUTSRQPONMLKJIHGFEDCBA", "ABCDEFGHIJKLMNOPQRSTUVWXYZ", "HELLO, WORLD!"
+    ),
+    "SVOOL, DLIOW!",
+)
 assert_eq(call("Ṇ", "wxyz", 4321, "abcd1234"), "abcdzyxw")
 assert_eq(
     call("Ṇ", "abc", 123, ["1", "9", "4", "7", "8", "5", "6", "2", "3"]),
@@ -1618,7 +1694,7 @@ assert_eq(call("Ṭ", [123, 456, 789]), [[1, 4, 7], [2, 5, 8], [3, 6, 9]])
 
 assert_eq(
     call("Ṭ", ["abc", "defg", "hijkl"]),
-    [["a", "d", "h"], ["b", "e", "i"], ["c", "f", "j"]],
+    ["adh", "bei", "cfj"],
 )
 assert_eq(call("Ṭ", ["abc", "", "defg", "hijkl"]), [])
 
@@ -1691,7 +1767,6 @@ assert_eq(call("Ƈ", 5, 10), 30240)
 assert_eq(call("Ƈ", 10, 20), 670442572800)
 
 assert_eq(call("Ƈ", "abc", "abcbabcbabcba"), 1)
-assert_eq(call("Ƈ", [123, 321, 132], "1232123212321"), [1, 1, 0])
 
 assert_eq(call("Ƈ", 1, [1, 2, 3, 2, 1, 2, 3]), 1)
 assert_eq(call("Ƈ", [1, 2, "a"], [1, "a", 1, "b", 1, "c"]), [1, 0, 1])
@@ -2155,6 +2230,7 @@ assert_eq(call("ƭ", 10), 3.1622776601683795)
 assert_eq(
     call("ƭ", [-2, -1, 0, 1, 2]), [1.4142135623730951, 1, 0, 1, 1.4142135623730951]
 )
+assert_eq(call("ƭ", 6.25), 2.5)
 
 assert_eq(call("ƭ", "abcdef"), "ace")
 assert_eq(call("ƭ", "xyz"), "xz")
@@ -2446,10 +2522,11 @@ assert_eq(call("ọ", [123, 456], ["abc", "def"]), ["abc", "def", "abc", "def"])
 
 # ṛ
 
-assert_eq(call("ṛ", 5, 3), -1)
-assert_eq(call("ṛ", 3, 5), 1)
+assert_eq(call("ṛ", 5, 3), 2)
+assert_eq(call("ṛ", 3, 5), 2)
 assert_eq(
-    call("ṛ", 10, [-10, -5, 0, 5, 10, 15, 20, 25, 30]), [-1, -1, -1, -1, 0, 1, 1, 1, 1]
+    call("ṛ", 10, [-10, -5, 0, 5, 10, 15, 20, 25, 30]),
+    [20, 15, 10, 5, 0, 5, 10, 15, 20],
 )
 
 assert_eq(call("ṛ", 8, "abcde"), "000abcde")
@@ -2807,6 +2884,21 @@ assert_eq(call("ØG", []), [])
 assert_eq(call("ØG", 123), 123)
 assert_eq(call("ØG", "abc"), "abc")
 
+# ØI
+
+assert_eq(call("ØI", 5, [[[1, 2], [3, 4]], [[5, 6], [7, 8]]]), [1, 0, 0])
+assert_eq(call("ØI", [[[1, 2], [3, 4]], [[5, 6], [7, 8]]], 8), [1, 1, 1])
+assert_eq(
+    call("ØI", [2, 3, 5, 7], [[[1, 2], [3, 4]], [[5, 6], [7, 8]]]),
+    [[0, 0, 1], [0, 1, 0], [1, 0, 0], [1, 1, 0]],
+)
+
+assert_eq(call("ØI", "abc", [[[1, 2], [3, 4]], [[5, 6], [7, 8]]]), [])
+assert_eq(call("ØI", [[[1, 2], [3, 4]], [[5, 6], [7, 8]]], 9), [])
+
+assert_eq(call("ØI", 123, 456), 456, 123)
+assert_eq(call("ØI", "abc", "def"), "def", "abc")
+
 # ØM
 
 assert_eq(call("ØM", [123, 4567, 89]), 89)
@@ -2815,6 +2907,26 @@ assert_eq(call("ØM", []), [])
 
 assert_eq(call("ØM", 123), 123)
 assert_eq(call("ØM", "abc"), "abc")
+
+# Øv
+
+assert_eq(call("Øv", 321), 1)
+assert_eq(call("Øv", 974.21), 1)
+assert_eq(call("Øv", 974.41), 0)
+
+assert_eq(call("Øv", "cba"), 1)
+assert_eq(call("Øv", [100, 80, 60, 20, -50]), 1)
+assert_eq(call("Øv", [100, 80, 60, 70, -50]), 0)
+
+# Øv
+
+assert_eq(call("Ø^", 123), 1)
+assert_eq(call("Ø^", 12.479), 1)
+assert_eq(call("Ø^", 14.479), 0)
+
+assert_eq(call("Ø^", "abc"), 1)
+assert_eq(call("Ø^", [-50, 20, 60, 80, 100]), 1)
+assert_eq(call("Ø^", [-50, 70, 60, 80, 100]), 0)
 
 # Ø.
 
@@ -2921,6 +3033,40 @@ assert_eq(
 
 assert_eq(call("ÆI", "abc"), ["abc"])
 
+# # ÆL
+#
+# assert_eq(call("ÆL", 3, 30), 3.0959032742893844)
+# assert_eq(call("ÆL", 10, 50), 1.6989700043360185)
+# assert_eq(
+#     call("ÆL", 2.5, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]),
+#     [0.0, 0.75647079736603, 1.19897784671579, 1.51294159473206, 1.7564707973660298,
+#      1.95544864408182, 2.1236820163783645, 2.26941239209809, 2.39795569343158, 2.51294159473206]
+# )
+#
+# assert_eq(call("ÆL", "abc", "def"), ["abc", "def"])
+
+# # ÆN
+#
+# assert_eq(call("ÆN", 0.1), -2.3025850929940455)
+# assert_eq(call("ÆN", 0.25), -1.3862943611198906)
+# assert_eq(call("ÆN", 0.5), -0.6931471805599453)
+# assert_eq(call("ÆN", 0.75), -0.2876820724517809)
+# assert_eq(call("ÆN", 0.9), -0.10536051565782628)
+# assert_eq(call("ÆN", 1.0), 0.0)
+# assert_eq(call("ÆN", 1.3), 0.26236426446749106)
+#
+# assert_eq(call("ÆN", 2), 0.6931471805599453)
+# assert_eq(call("ÆN", 2.718281828459045), 1.0)
+# assert_eq(call("ÆN", 3.141592653589793), 1.1447298858494002)
+# assert_eq(call("ÆN", 4), 1.3862943611198906)
+# assert_eq(call("ÆN", 5), 1.6094379124341003)
+# assert_eq(call("ÆN", 7), 1.9459101490553132)
+#
+# assert_eq(call("ÆN", 10), 2.302585092994046)
+# assert_eq(call("ÆN", 53), 3.970291913552122)
+# assert_eq(call("ÆN", 54.59815003314423), 4.0)
+# assert_eq(call("ÆN", 99), 4.59511985013459)
+
 # ÆP
 
 assert_eq(call("ÆP", 0), 2)
@@ -2951,6 +3097,42 @@ assert_eq(call("ÆP", [10, 11, 12, 13, 14]), [31, 37, 41, 43, 47])
 # assert_eq(call("Æc", 0.866), 0.5236495809318289)  # ~ pi/6
 # assert_eq(call("Æc", 1), 0.0)  # ~ 0
 
+# # Æl
+#
+# assert_eq(call("Æl", 0.1), -1.0)
+# assert_eq(call("Æl", 0.25), -0.6020599913279624)
+# assert_eq(call("Æl", 0.5), -0.3010299956639812)
+# assert_eq(call("Æl", 0.75), -0.12493873660829995)
+# assert_eq(call("Æl", 0.9), -0.045757490560675115)
+# assert_eq(call("Æl", 1.0), 0.0)
+# assert_eq(call("Æl", 1.3), 0.11394335230683679)
+#
+# assert_eq(call("Æl", 2), 0.3010299956639812)
+# assert_eq(call("Æl", 2.718281828459045), 0.4342944819032518)
+# assert_eq(call("Æl", 3.141592653589793), 0.49714987269413385)
+# assert_eq(call("Æl", 4), 0.6020599913279624)
+# assert_eq(call("Æl", 5), 0.6989700043360189)
+# assert_eq(call("Æl", 7), 0.8450980400142568)
+#
+# assert_eq(call("Æl", 10), 1.0)
+# assert_eq(call("Æl", 53), 1.724275869600789)
+# assert_eq(call("Æl", 54.59815003314423), 1.7371779276130073)
+# assert_eq(call("Æl", 99), 1.99563519459755)
+
+# Æp
+
+assert_eq(call("Æp", 0), [])
+assert_eq(call("Æp", 5), [2, 3, 5, 7, 11])
+assert_eq(call("Æp", 1.23), [2])
+assert_eq(
+    call("Æp", [10, 11, 12]),
+    [
+        [2, 3, 5, 7, 11, 13, 17, 19, 23, 29],
+        [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31],
+        [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37],
+    ],
+)
+
 # # Æs
 #
 # assert_eq(call("Æs", 0), 0.0)  # ~ 0
@@ -2965,6 +3147,28 @@ assert_eq(call("ÆP", [10, 11, 12, 13, 14]), [31, 37, 41, 43, 47])
 # assert_eq(call("Æt", 0.577), 0.5233360338618205)  # ~ pi/6
 # assert_eq(call("Æt", 1), 0.7853981633974483)  # ~ pi/4
 # assert_eq(call("Æt", 1.732), 1.0471848490249274)  # ~ pi/3
+
+# # Æḷ
+#
+# assert_eq(call("Æḷ", 0.1), -3.321928094887362)
+# assert_eq(call("Æḷ", 0.25), -2.0)
+# assert_eq(call("Æḷ", 0.5), -1.0)
+# assert_eq(call("Æḷ", 0.75), -0.4150374992788438)
+# assert_eq(call("Æḷ", 0.9), -0.15200309344504995)
+# assert_eq(call("Æḷ", 1.0), 0.0)
+# assert_eq(call("Æḷ", 1.3), 0.37851162325372983)
+#
+# assert_eq(call("Æḷ", 2), 1.0)
+# assert_eq(call("Æḷ", 2.718281828459045), 1.4426950408889634)
+# assert_eq(call("Æḷ", 3.141592653589793), 1.6514961294723187)
+# assert_eq(call("Æḷ", 4), 2.0)
+# assert_eq(call("Æḷ", 5), 2.321928094887362)
+# assert_eq(call("Æḷ", 7), 2.807354922057604)
+#
+# assert_eq(call("Æḷ", 10), 3.321928094887362)
+# assert_eq(call("Æḷ", 53), 5.727920454563199)
+# assert_eq(call("Æḷ", 54.59815003314423), 5.7707801635558535)
+# assert_eq(call("Æḷ", 99), 6.6293566200796095)
 
 # Æ&
 
@@ -3017,6 +3221,50 @@ assert_eq(
 )
 
 assert_eq(call("Æ~", "abc"), ["abc"])
+
+# Æ²
+
+assert_eq(call("Æ²", 100), 1)
+assert_eq(call("Æ²", 10), 0)
+assert_eq(call("Æ²", 6.25), 0)
+
+assert_eq(call("Æ²", [-3, -2, -1, 0, 1, 2, 3]), [0, 0, 0, 1, 1, 0, 0])
+assert_eq(call("Æ²", [9998, 9999, 10000, 10001, 10002]), [0, 0, 1, 0, 0])
+
+assert_eq(call("Æ²", "abc"), "abc")
+
+# Æ³
+
+assert_eq(call("Æ³", 1000), 1)
+assert_eq(call("Æ³", 100), 0)
+assert_eq(call("Æ³", 15.625), 0)
+
+assert_eq(call("Æ³", [-3, -2, -1, 0, 1, 2, 3]), [0, 0, 0, 1, 1, 0, 0])
+assert_eq(call("Æ³", [998, 999, 1000, 1001, 1002]), [0, 0, 1, 0, 0])
+
+assert_eq(call("Æ³", "abc"), "abc")
+
+# Æ⁴
+
+assert_eq(call("Æ⁴", 256), 1)
+assert_eq(call("Æ⁴", 1000), 0)
+assert_eq(call("Æ⁴", 39.0625), 0)
+
+assert_eq(call("Æ⁴", [-3, -2, -1, 0, 1, 2, 3]), [0, 0, 0, 1, 1, 0, 0])
+assert_eq(call("Æ⁴", [623, 624, 625, 626, 627]), [0, 0, 1, 0, 0])
+
+assert_eq(call("Æ⁴", "abc"), "abc")
+
+# Æ⁵
+
+assert_eq(call("Æ⁵", 1024), 1)
+assert_eq(call("Æ⁵", 512), 0)
+assert_eq(call("Æ⁵", 97.65625), 0)
+
+assert_eq(call("Æ⁵", [-3, -2, -1, 0, 1, 2, 3]), [0, 0, 0, 1, 1, 0, 0])
+assert_eq(call("Æ⁵", [241, 242, 243, 244, 245]), [0, 0, 1, 0, 0])
+
+assert_eq(call("Æ⁵", "abc"), "abc")
 
 # µR
 
@@ -3229,6 +3477,15 @@ assert_eq(call("µ^", "xyz", 0), 1)
 assert_eq(call("µ^", [-1, 0, 1], ["abc", "def", ""]), 0)
 assert_eq(call("µ^", 5, []), 1)
 
+# µ/
+
+assert_eq(call("µ/", "b", "abcbabcba"), ["a", "c", "a", "c", "a"])
+assert_eq(
+    call("µ/", 3, 12345432123454321), [[1, 2], [4, 5, 4], [2, 1, 2], [4, 5, 4], [2, 1]]
+)
+
+assert_eq(call("µ/", 123, [123, 456, 789, 123, 456, 789]), [[], [456, 789], [456, 789]])
+
 # After all the tests
 
 all_commands = (
@@ -3245,7 +3502,10 @@ untested_commands = sorted(
 if untested_commands:
     print(f'\u001b[33mUntested commands: {", ".join(untested_commands)}')
 
-print(f"\u001b[32mPassed {tests_counter} tests on {len({*tested_commands})} commands.")
+print(
+    f"\u001b[32mPassed {tests_counter} tests on {len({*tested_commands})} commands "
+    f"in {int((time.time() - start) * 1000)}ms."
+)
 
 avg_tests = tests_counter / len({*tested_commands})
 if avg_tests < 4:

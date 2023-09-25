@@ -143,7 +143,7 @@ def tokenise(code, expected_end=""):
                 y = char + x
                 if y == "µµ":
                     i, r = tokenise(code[index + 1 :], expected_end=";")
-                    index += i
+                    index += i + 1
                     ret.append((y, "recursive environment", r))
                 elif y == "µ£":
                     ret.append((y, "print each", 0))
@@ -154,7 +154,7 @@ def tokenise(code, expected_end=""):
                         index += 1
                         cmd += code[index]
                     func = get_a_function(cmd)
-                    ret.append((char + cmd, "single function reduce by", func))
+                    ret.append((y + cmd, "single function reduce by", func))
                 elif y == "µɼ":
                     index += 1
                     cmd = code[index]
@@ -162,7 +162,7 @@ def tokenise(code, expected_end=""):
                         index += 1
                         cmd += code[index]
                     func = get_a_function(cmd)
-                    ret.append((char + cmd, "single function right reduce by", func))
+                    ret.append((y + cmd, "single function right reduce by", func))
                 elif y == "µƇ":
                     index += 1
                     cmd = code[index]
@@ -171,12 +171,96 @@ def tokenise(code, expected_end=""):
                         cmd += code[index]
                     func = get_a_function(cmd)
                     ret.append(
-                        (char + cmd, "single function right cumulative reduce by", func)
+                        (y + cmd, "single function right cumulative reduce by", func)
                     )
                 elif y == "µʋ":
                     i, r = tokenise(code[index + 1 :], expected_end=";")
-                    index += i
+                    index += i + 1
                     ret.append((y, "right reduce by", r))
+                elif y == "µ€":
+                    index += 1
+                    cmd = code[index]
+                    if cmd in DIGRAPHS:
+                        index += 1
+                        cmd += code[index]
+                    func = get_a_function(cmd)
+                    ret.append((y + cmd, "apply to every nth item", func))
+                elif y == "µ«":
+                    ret.append((y, "rotate stack left", 0))
+                elif y == "µ»":
+                    ret.append((y, "rotate stack right", 0))
+                elif y == "µ!":
+                    ret.append((y, "reverse stack", 0))
+                elif y == "µÑ":
+                    i, r = tokenise(code[index + 1 :], expected_end=";")
+                    index += i + 1
+                    ret.append((y, "adjacent group by", r))
+                elif y == "µñ":
+                    index += 1
+                    cmd = code[index]
+                    if cmd in DIGRAPHS:
+                        index += 1
+                        cmd += code[index]
+                    func = get_a_function(cmd)
+                    ret.append((y + cmd, "single function adjacent group by", func))
+                elif y == "µı":
+                    i, r = tokenise(code[index + 1 :], expected_end=";")
+                    index += i + 1
+                    ret.append((y, "nmap", r))
+                elif y == "µ²":
+                    i, r = tokenise(code[index + 1 :], expected_end=";")
+                    index += i + 1
+                    ret.append((y, "2map", r))
+                elif y == "µ³":
+                    i, r = tokenise(code[index + 1 :], expected_end=";")
+                    index += i + 1
+                    ret.append((y, "3map", r))
+                elif y == "µq":
+                    ret.append((y, "quit", 0))
+                elif y == "µƘ":
+                    i, r = tokenise(code[index + 1 :], expected_end=";")
+                    index += i + 1
+                    ret.append((y, "first integer", r))
+                elif y == "µK":
+                    i, r = tokenise(code[index + 1 :], expected_end=";")
+                    index += i + 1
+                    ret.append((y, "first n integers", r))
+                elif y == "µ¥":
+                    i, r = tokenise(code[index + 1 :], expected_end=";")
+                    index += i + 1
+                    ret.append((y, "while unique", r))
+                elif y == "µ‘":
+                    compressed_string = ""
+                    index += 1
+                    try:
+                        while code[index] != "‘":
+                            compressed_string += code[index]
+                            index += 1
+                    except:
+                        pass
+                    ret.append(
+                        (
+                            y + compressed_string + "‘",
+                            "space autofill lowercase dictionary compression",
+                            compressed_string,
+                        )
+                    )
+                elif y == "µ’":
+                    compressed_string = ""
+                    index += 1
+                    try:
+                        while code[index] != "’":
+                            compressed_string += code[index]
+                            index += 1
+                    except:
+                        pass
+                    ret.append(
+                        (
+                            y + compressed_string + "’",
+                            "space autofill title case dictionary compression",
+                            compressed_string,
+                        )
+                    )
                 else:
                     ret.append((y, "digraph", get_a_function(y)))
             except:
@@ -256,34 +340,47 @@ def tokenise(code, expected_end=""):
             else:
                 index += 1
                 ret.append(("ʋ" + x + nxt, "two words dictionary compression", x + nxt))
+        # elif char == "[":
+        #     s = char
+        #     index += 1
+        #     try:
+        #         in_string = ""
+        #         nests = 1
+        #         while nests:
+        #             c = code[index]
+        #             s += c
+        #             if in_string == "" and c in ('"', "'"):
+        #                 in_string = c
+        #             elif in_string != "" and c == in_string:
+        #                 if code[index - 1] != "\\":
+        #                     in_string = ""
+        #             if in_string == "":
+        #                 if c == "[":
+        #                     nests += 1
+        #                 elif c == "]":
+        #                     nests -= 1
+        #             index += 1
+        #     except:
+        #         s += "]"
+        #     try:
+        #         ret.append((s, "list", eval(s)))
+        #     except:
+        #         ret.append((s, "list", s))
+        # elif char == "]":
+        #     ret.append(("]", "list", []))
         elif char == "[":
-            s = char
-            index += 1
+            r = []
+            i, x = tokenise(code[index + 1 :], expected_end=";]")
+            index += i + 1
+            r.append(x)
             try:
-                in_string = ""
-                nests = 1
-                while nests:
-                    c = code[index]
-                    s += c
-                    if in_string == "" and c in ('"', "'"):
-                        in_string = c
-                    elif in_string != "" and c == in_string:
-                        if code[index - 1] != "\\":
-                            in_string = ""
-                    if in_string == "":
-                        if c == "[":
-                            nests += 1
-                        elif c == "]":
-                            nests -= 1
-                    index += 1
+                while code[index] == ";":
+                    i, x = tokenise(code[index + 1 :], expected_end=";]")
+                    index += i + 1
+                    r.append(x)
             except:
-                s += "]"
-            try:
-                ret.append((s, "list", eval(s)))
-            except:
-                ret.append((s, "list", s))
-        elif char == "]":
-            ret.append(("]", "list", []))
+                pass
+            ret.append((char, "list", r))
         elif char == "#":
             index += 1
             try:
@@ -506,8 +603,6 @@ def tokenise(code, expected_end=""):
                 )
             except:
                 pass
-        elif char == "q":
-            ret.append((char, "quit", 0))
         elif char == "$":
             ret.append((char, "next input", 0))
         elif char == "¤":
@@ -532,47 +627,51 @@ def tokenise(code, expected_end=""):
             ret.append((char, "print without popping", 0))
         elif char == "ı":
             i, r = tokenise(code[index + 1 :], expected_end=";")
-            index += i
+            index += i + 1
             ret.append((char, "map", r))
         elif char == "æ":
             i, r = tokenise(code[index + 1 :], expected_end=";")
-            index += i
+            index += i + 1
             ret.append((char, "filter", r))
         elif char == "Þ":
             i, r = tokenise(code[index + 1 :], expected_end=";")
-            index += i
+            index += i + 1
             ret.append((char, "sort by", r))
         elif char == "Ñ":
             i, r = tokenise(code[index + 1 :], expected_end=";")
-            index += i
+            index += i + 1
             ret.append((char, "group by", r))
         elif char == "¥":
             i, r = tokenise(code[index + 1 :], expected_end=";")
-            index += i
+            index += i + 1
             ret.append((char, "fixed point", r))
         elif char == "Ƙ":
             i, r = tokenise(code[index + 1 :], expected_end=";")
             index += i
-            ret.append((char, "first n integers", r))
+            ret.append((char, "first positive integer", r))
         elif char == "Ʋ":
             i, r = tokenise(code[index + 1 :], expected_end=";")
-            index += i
+            index += i + 1
             ret.append((char, "cumulative reduce by", r))
         elif char == "{":
             i, r = tokenise(code[index + 1 :], expected_end="}")
-            index += i
+            index += i + 1
             ret.append((char, "for loop", r))
         elif char == "(":
             i, r1 = tokenise(code[index + 1 :], expected_end=";)")
             index += i + 1
             r2 = []
             try:
-                if code[index] == ";":
+                if code[index] in (";", "}", ":"):
                     i, r2 = tokenise(code[index + 1 :], expected_end=")")
                     index += i
             except:
                 pass
             ret.append((char, "while loop", (r1, r2)))
+        elif char == "⁽":
+            i, r = tokenise(code[index + 1 :], expected_end="⁾")
+            index += i + 1
+            ret.append((char, "forever loop", r))
         elif char == "?":
             i, r1 = tokenise(code[index + 1 :], expected_end=":;")
             index += i + 1
@@ -631,8 +730,14 @@ def tokenise(code, expected_end=""):
                 func2 = get_a_function(cmd2)
             except:
                 func2, cmd2 = Void, ""
-            ret.append((char + cmd1 + cmd2, "two function map", (func1, func2)))
+            ret.append((char + cmd1 + cmd2, "pair apply dump", (func1, func2)))
         elif char in expected_end:
+            return index, ret
+        elif char == ":":
+            ret.append((":", "command", commands["="]))
+            return index, ret
+        elif char == "}":
+            ret.append(("}", "command", commands["¬"]))
             return index, ret
         index += 1
     return index + 1, ret

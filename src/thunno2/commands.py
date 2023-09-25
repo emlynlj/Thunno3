@@ -137,16 +137,42 @@ class Stack(list):
 
     # Remove n items from the front
     def rmv(self, num, default=0):
-        for _ in range(num):
-            if list(self):
-                yield self.pop(0)
-            else:
-                if ctx.other_il:
-                    x = ctx.other_il.pop(0)
-                    ctx.other_il.append(x)
-                    yield x
+        if not ctx.reverse:
+            for _ in range(num):
+                if list(self) and ctx.pop:
+                    if ctx.pop:
+                        yield self.pop(0)
+                elif len(self) > _ and (not ctx.pop):
+                    yield self[_]
                 else:
-                    yield default
+                    if (not ctx.vyxal_mode) or ctx.context is None:
+                        if ctx.other_il:
+                            x = ctx.other_il.pop(0)
+                            ctx.other_il.append(x)
+                            yield x
+                        else:
+                            yield default
+                    else:
+                        yield ctx.context
+        else:
+            r = []
+            for _ in range(num):
+                if list(self) and ctx.pop:
+                    if ctx.pop:
+                        r.append(self.pop(0))
+                elif len(self) > _ and (not ctx.pop):
+                    r.append(self[_])
+                else:
+                    if (not ctx.vyxal_mode) or ctx.context is None:
+                        if ctx.other_il:
+                            x = ctx.other_il.pop(0)
+                            ctx.other_il.append(x)
+                            r.append(x)
+                        else:
+                            r.append(default)
+                    else:
+                        r.append(ctx.context)
+            yield from r[::-1]
 
 
 class Context:
@@ -156,6 +182,10 @@ class Context:
         self.other_il = []
         self.implicit_print = True
         self.warnings = False
+        self.context = None
+        self.vyxal_mode = False
+        self.reverse = False
+        self.pop = True
 
 
 ctx = Context()
@@ -185,6 +215,9 @@ class VoidType:
 
     def __repr__(self):
         return "Void"
+
+    def __iter__(self):
+        yield from []
 
 
 Void = VoidType()
@@ -425,7 +458,9 @@ DIGRAPHS = "ØøÆµ"
 """DICTIONARY"""
 
 commands = {
-    "A": Overload(1, {Number: abs, str: isalpha}, 1, ("abs", "absolute", "isalpha")),
+    "A": Overload(
+        1, {Number: abs, str: isalpha}, 1, ("abs", "absolute", "isalpha", "is_alpha")
+    ),
     "B": Overload(
         2,
         {
@@ -445,7 +480,9 @@ commands = {
     "E": Overload(1, {Number: is_even, str: eval2}, 1, ("even", "is_even", "eval")),
     "F": Overload(1, {Number: factors, str: substrings}, 1, ("factors", "substrings")),
     "G": Overload(1, {Number: max2, Iterable: max3}, 0, ("max", "maximum", "greatest")),
-    "H": Overload(1, {(int, str): from_hex, float: pass_}, 1, ("from_hex",)),
+    "H": Overload(
+        1, {(int, str): from_hex, float: pass_}, 1, ("from_hex", "from_hexadecimal")
+    ),
     "I": Overload(
         2,
         {
@@ -456,7 +493,7 @@ commands = {
             (str, str): interleave_str,
         },
         0,
-        ("binary_range", "slice", "interleave"),
+        ("inclusive_range", "slice", "interleave"),
     ),
     "J": Overload(1, {Number: str, Iterable: empty_join}, 0, ("empty_join", "str")),
     # K is defined in the run function
@@ -539,8 +576,10 @@ commands = {
         2,
         {
             (Number[0], Number[0]): nCr,
-            (Any, str): string_count,
-            (Any, list): list_count,
+            (Any[0], list): list_count,
+            (list, Any[0]): swapped_list_count,
+            (Any[0], str): string_count,
+            (str, Any[0]): swapped_string_count,
         },
         0,
         ("ncr", "count"),
@@ -595,7 +634,12 @@ commands = {
         0,
         ("product", "prod"),
     ),
-    # q is defined in the run function
+    "q": Overload(
+        1,
+        {Number: range_permutations, Iterable: all_permutations},
+        0,
+        ("all_permutations",),
+    ),
     "r": Overload(1, {Number: digit_reverse, Iterable: reverse}, 0, ("reverse",)),
     "s": Overload(2, {(Any[0], Any[0]): swap}, 0, ("swap",)),
     "t": Overload(1, {Number: num_tail, Iterable: tail}, 0, ("tail", "last")),
@@ -621,7 +665,10 @@ commands = {
         1, {Number: num_uninterleave, Iterable: uninterleave}, 0, ("uninterleave",)
     ),
     "Ȧ": Overload(
-        1, {Number: bool2, str: isalphanum, list: any2}, 0, ("any", "isalphanum")
+        1,
+        {Number: bool2, str: isalphanum, list: any2},
+        0,
+        ("any", "is_alphanum", "is_alpha_num"),
     ),
     "Ḃ": Overload(1, {(int, str): from_binary, float: pass_}, 1, ("from_binary",)),
     "Ċ": Overload(
@@ -928,7 +975,12 @@ commands = {
     ),
     "&": Overload(2, {(Any[0], Any[0]): logical_and}, 2, ("and", "logical_and")),
     "|": Overload(2, {(Any[0], Any[0]): logical_or}, 2, ("or", "logical_or")),
-    "^": Overload(2, {(Any[0], Any[0]): logical_xor}, 2, ("xor", "logical_xor")),
+    "^": Overload(
+        1,
+        {Number: num_uninterleave_dump, Iterable: uninterleave_dump},
+        0,
+        ("uninterleave_dump",),
+    ),
     "~": Overload(1, {Any: logical_not}, 1, ("not", "logical_not")),
     "ð": Overload(0, {Any: (lambda: " ")}, 0, ("space",)),
     "Ð": Overload(1, {Any: triplicate}, 0, ("triplicate",)),
@@ -937,6 +989,7 @@ commands = {
         {
             (Any[0], Number[0], Iterable[0]): assign,
             (Any[0], Iterable[0], Number[0]): swapped_assign,
+            (list, list, Iterable[0]): zipped_assign,
             (Any[0], list, Iterable[0]): vectorised_assign,
             (Any[0], str, Iterable[0]): length_assign,
             (Any[0], Number[0], Number[0]): num_assign,
@@ -1222,8 +1275,10 @@ commands = {
         2,
         {
             (Number[0], Number[0]): nPr,
-            (Any, list): list_contains,
-            (Any, str): string_contains,
+            (Any[0], list): list_contains,
+            (list, Any[0]): swapped_list_contains,
+            (Any[0], str): string_contains,
+            (str, Any[0]): swapped_string_contains,
         },
         0,
         ("npr", "contains"),
@@ -1256,7 +1311,7 @@ commands = {
         1,
         {Number: integer_partitions, Iterable: newline_join},
         0,
-        ("integer_partitions", "newline_join"),
+        ("integer_partitions", "newline_join", "join_by_newlines"),
     ),
     "Ƥ": Overload(
         2,
@@ -1283,7 +1338,9 @@ commands = {
     "ƈ": Overload(1, {Number: num_counts, Iterable: counts}, 0, ("counts",)),
     "ɗ": Overload(1, {Number: parity, str: second_half}, 1, ("parity", "second_half")),
     "ƒ": Overload(1, {Number: num_prefixes, Iterable: prefixes}, 0, ("prefixes",)),
-    "ɠ": Overload(0, {Any: (lambda: 256)}, 0, ("two_fifty_six",)),
+    "ɠ": Overload(
+        0, {Any: (lambda: 256)}, 0, ("two_fifty_six", "two_hundred_fifty_six")
+    ),
     "ɦ": Overload(0, {Any: (lambda: 100)}, 0, ("hundred", "one_hundred")),
     "ƙ": Overload(
         1,
@@ -1335,8 +1392,10 @@ commands = {
     ),
     "²": Overload(1, {Number: square, str: chunk_wrap_2}, 1, ("square",)),
     "³": Overload(1, {Number: cube, str: chunk_wrap_3}, 1, ("cube",)),
-    "⁴": Overload(1, {Number: fourth, str: chunk_wrap_4}, 1, ("fourth",)),
-    "⁵": Overload(1, {Number: fifth, str: chunk_wrap_5}, 1, ("fifth",)),
+    "⁴": Overload(
+        1, {Number: fourth, str: chunk_wrap_4}, 1, ("fourth", "fourth_power")
+    ),
+    "⁵": Overload(1, {Number: fifth, str: chunk_wrap_5}, 1, ("fifth", "fifth_power")),
     "ạ": Overload(1, {Number: num_all_equal, Iterable: all_equal}, 0, ("all_equal",)),
     "ḅ": Overload(1, {Any: equals_one}, 1, ("equals_one",)),
     "ḍ": Overload(
@@ -1407,13 +1466,13 @@ commands = {
     "ṛ": Overload(
         2,
         {
-            (Number[0], Number[0]): cmp,
+            (Number[0], Number[0]): absolute_difference,
             (Number[0], str): zfill1,
             (str, Number[0]): zfill2,
             (str, str): surround,
         },
         2,
-        ("compare", "cmp", "zfill", "surround"),
+        ("absolute_difference", "zfill", "surround"),
     ),
     "ṣ": Overload(1, {Number: spaces, Iterable: suffixes}, 0, ("suffixes", "spaces")),
     "ṭ": Overload(3, {(Any[0], Any[0], Any[0]): triple_swap}, 0, ("triple_swap",)),
@@ -1514,7 +1573,22 @@ list_digraphs = {
         ),
     ),
     "G": Overload(1, {((int, float, str),): pass_, list: longest}, 0, ("longest",)),
+    "I": Overload(
+        2,
+        {
+            ((int, float, str), list): multidimensional_index,
+            (list, (int, float, str)): swapped_multidimensional_index,
+            (list, list): vectorised_multidimensional_index,
+            (Any[0], Any[0]): pass_,
+        },
+        0,
+        ("multidimensional_index",),
+    ),
     "M": Overload(1, {((int, float, str),): pass_, list: shortest}, 0, ("shortest",)),
+    "v": Overload(
+        1, {Number: num_descending, Iterable: descending}, 0, ("descending",)
+    ),
+    "^": Overload(1, {Number: num_ascending, Iterable: ascending}, 0, ("ascending",)),
     ".": Overload(
         2, {(list, list): dot_product, (Any[0], Any[0]): pass_}, 0, ("dot_product",)
     ),
@@ -1542,17 +1616,26 @@ random_digraphs_1 = {
     "F": Overload(1, {Any: nth_fibonacci_number}, 1, ("nth_fibonacci_number",)),
     "H": Overload(2, {(Any[0], Any[0]): hypotenuse}, 2, ("hypot", "hypotenuse")),
     "I": Overload(1, {Any: insignificant}, 1, ("insignificant",)),
+    "L": Overload(2, {(Any[0], Any[0]): logarithm}, 2, ("log", "logarithm")),
+    "N": Overload(1, {Any: ln}, 1, ("natural_log", "natural_logarithm")),
     "P": Overload(1, {Any: nth_prime}, 1, ("nth_prime",)),
     "R": Overload(1, {Any: radians}, 1, ("radians",)),
     "S": Overload(1, {Any: sine}, 1, ("sine", "sin")),
     "T": Overload(1, {Any: tangent}, 1, ("tangent", "tan")),
     "c": Overload(1, {Any: arc_cosine}, 1, ("arc_cosine", "arccos")),
+    "l": Overload(1, {Any: log10}, 1, ("log10", "common_log", "common_logarithm")),
+    "p": Overload(1, {Any: first_n_primes}, 1, ("first_n_primes",)),
     "s": Overload(1, {Any: arc_sine}, 1, ("arc_sine", "arcsin")),
     "t": Overload(1, {Any: arc_tangent}, 1, ("arc_tangent", "arctan")),
+    "ḷ": Overload(1, {Any: log2}, 1, ("log2", "log_base_2")),
     "&": Overload(2, {(Any[0], Any[0]): bitwise_and}, 2, ("bitwise_and",)),
     "|": Overload(2, {(Any[0], Any[0]): bitwise_or}, 2, ("bitwise_or",)),
     "^": Overload(2, {(Any[0], Any[0]): bitwise_xor}, 2, ("bitwise_xor",)),
     "~": Overload(1, {Any: bitwise_not}, 1, ("bitwise_not",)),
+    "²": Overload(1, {Any: perfect_square}, 1, ("perfect_square",)),
+    "³": Overload(1, {Any: perfect_cube}, 1, ("perfect_cube",)),
+    "⁴": Overload(1, {Any: perfect_fourth}, 1, ("perfect_fourth",)),
+    "⁵": Overload(1, {Any: perfect_fifth}, 1, ("perfect_fifth",)),
 }
 
 random_digraphs_2 = {
@@ -1626,6 +1709,16 @@ random_digraphs_2 = {
         {(Any[0], Any[0]): logical_xor},
         0,
         ("non_vectorised_xor", "non_vectorised_logical_xor"),
+    ),
+    "/": Overload(
+        2,
+        {
+            (list, Any[0]): swapped_split_on,
+            (Any[0], Iterable[0]): split_on,
+            (Any[0], Number[0]): num_split_on,
+        },
+        0,
+        ("split_on",),
     ),
 }
 

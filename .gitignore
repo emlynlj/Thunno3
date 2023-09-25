@@ -1,0 +1,14 @@
+# editor directories / files
+.vscode
+.idea
+
+# PyPI stuff
+
+src/dist/
+src/setup.py
+src/thunno2.egg-info/
+
+# Others
+.DS_Store
+*.pyc
+src/build/

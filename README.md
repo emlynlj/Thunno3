@@ -2,6 +2,18 @@
 
 A concise golfing language
 
+![Test status](https://github.com/Thunno/Thunno2/actions/workflows/tests.yml/badge.svg)
+![Downloads](https://static.pepy.tech/personalized-badge/thunno2?period=total&units=abbreviation&left_color=grey&right_color=brightgreen&left_text=Downloads)
+![Last Commit](https://img.shields.io/github/last-commit/Thunno/Thunno2)
+<!-- ![Contributors](https://img.shields.io/github/contributors/Thunno/Thunno2)
+ (Add when this goes up) -->
+
+## Links
+
+Thunno 2 has its own [online interpreter](https://Not-Thonnu.github.io/run), where you can try Thunno 2 online. Thunno 2 is also on [Attempt This Online!](https://ato.pxeger.com/run?1=m728JKM0Ly_faMGCpaUlaboWC5YUJyUXwzhQGgA), an online sandbox environment for running code in hundreds of different programming languages.
+
+If you have any questions about Thunno 2, feel free to ping me (`@TheThonnu`) in the [Thunno 2 chatroom](https://chat.stackexchange.com/rooms/145278/thunno-2).
+
 ## Installation
 
 You'll need Python 3.6+ to run Thunno 2. If you don't have this already, you can download it from [here](https://www.python.org/downloads/).
@@ -26,8 +38,12 @@ This will start the interpreter. After that, type in your code, input and flags 
 
 See the [`docs` folder](https://github.com/Thunno/Thunno2/blob/main/docs) for the documentation.
 
+## Tips
+
+For tips on how to code-golf in Thunno 2, see [Tips for golfing in Thunno 2](https://codegolf.stackexchange.com/q/260902/114446) on Code Golf Stack Exchange.
+
 ## License
 
-© Rujul Nayak 2023
+© Thunno organisation 2023
 
 The code in this repository is licenced under the Creative Commons Zero v1.0 Universal License. See [`LICENSE.txt`](https://github.com/Thunno/Thunno2/blob/main/LICENSE.txt) for the full license.

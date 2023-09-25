@@ -163,10 +163,33 @@ def try_float_conversion(func):
     return wrapper
 
 
+def try_number_conversion(func):
+    def wrapper(*args, fn=func):
+        new_args = []
+        try:
+            for a in args:
+                if isinstance(a, int):
+                    new_args.append(a)
+                elif isinstance(a, str):
+                    try:
+                        new_args.append(int(a))
+                    except:
+                        new_args.append(float(a))
+                elif isinstance(a, float):
+                    new_args.append(a)
+                else:
+                    raise
+        except:
+            return args
+        return fn(*new_args)
+
+    return wrapper
+
+
 def safe_max_len(*lsts):
     m = 0
     for lst in lsts:
-        if isinstance(lst, list):
+        if isinstance(lst, (list, str)):
             if len(lst) > m:
                 m = len(lst)
     return m
@@ -256,10 +279,14 @@ def from_list_of_digits_2(num, base):
     return r
 
 
-def decompress(s, char):
-    ci = codepage.CODEPAGE.index(char)
-    indices = [i - (i > ci) for i in codepage.codepage_index(*s)]
-    return from_list_of_digits_2(indices, 255)
+def decompress(s, char=None):
+    if char is not None:
+        ci = codepage.CODEPAGE.index(char)
+        indices = [i - (i > ci) for i in codepage.codepage_index(*s)]
+        return from_list_of_digits_2(indices, 255)
+    else:
+        indices = [*codepage.codepage_index(*s)]
+        return from_list_of_digits_2(indices, 256)
 
 
 def chr2(num):
@@ -568,6 +595,14 @@ def list_count(x, y):
     return y.count(x)
 
 
+def swapped_list_count(y, x):
+    return list_count(x, y)
+
+
+def swapped_string_count(y, x):
+    return string_count(x, y)
+
+
 def duplicate(x):
     return x, x
 
@@ -776,7 +811,10 @@ def list_replace(x, y, z):
 def digit_reverse(num):
     r = str(num)[::-1]
     try:
-        return eval(r)
+        try:
+            return int(r)
+        except:
+            return eval(r)
     except:
         return r
 
@@ -815,6 +853,14 @@ def uninterleave(l):
 
 def num_uninterleave(n):
     return uninterleave(_digits(n))
+
+
+def uninterleave_dump(l):
+    return l[0::2], l[1::2]
+
+
+def num_uninterleave_dump(n):
+    return uninterleave_dump(_digits(n))
 
 
 def bool2(x):
@@ -1286,6 +1332,7 @@ def vectorised_index_of(x, y):
             r.append(index_of(i, y))
         else:
             r.append(num_index_of(i, y))
+    return r
 
 
 def cartesian_product(x, y):
@@ -1409,6 +1456,15 @@ def vectorised_assign(c, b, a):
             a = length_assign(c, i, a)
         else:
             a = assign(c, i, a)
+    return a
+
+
+def zipped_assign(c, b, a):
+    for i, j in zip(c, b):
+        if isinstance(j, (int, float)):
+            a = assign(i, j, a)
+        elif isinstance(i, (int, float)):
+            a = assign(j, i, a)
     return a
 
 
@@ -1575,6 +1631,8 @@ def permutations1(n, x):
         n = len(x)
     if n < 1:
         n = 1
+    if isinstance(x, str):
+        return list(map("".join, itertools.permutations(x, n)))
     return list(map(list, itertools.permutations(x, n)))
 
 
@@ -1584,6 +1642,14 @@ def permutations2(x, n):
 
 def permutations3(x, y):
     return permutations1(x, one_range(y))
+
+
+def all_permutations(l):
+    return permutations1(len(l), l)
+
+
+def range_permutations(n):
+    return permutations3(abs(n), n)
 
 
 def set_difference(x, y):
@@ -1759,51 +1825,67 @@ def mirror(x):
 
 
 def str_transliterate(a, b, c):
-    for i, j in zip(a, b):
-        c = str(c).replace(str(j), str(i))
-    return str(c)
+    r = ""
+    d = dict(zip(map(str, b), map(str, a)))
+    for x in str(c):
+        r += str(d.get(x, x))
+    return r
 
 
 def list_transliterate(a, b, c):
-    for i, j in zip(a, b):
-        c = list_replace(i, j, c)
-    return c
+    r = []
+    d = dict(zip(b, a))
+    for x in c:
+        r.append(d.get(x, x))
+    return r
 
 
 def str_transliterate_overload_1(a, b, c):
-    for i, j in zip(a, str(b)):
-        c = str(c).replace(str(j), str(i))
-    return str(c)
+    r = ""
+    d = dict(zip(str(b), map(str, a)))
+    for x in str(c):
+        r += str(d.get(x, x))
+    return r
 
 
 def list_transliterate_overload_1(a, b, c):
-    for i, j in zip(a, str(b)):
-        c = list_replace(i, j, c)
-    return c
+    r = []
+    d = dict(zip(str(b), a))
+    for x in c:
+        r.append(d.get(x, x))
+    return r
 
 
 def str_transliterate_overload_2(a, b, c):
-    for i, j in zip(str(a), b):
-        c = str(c).replace(str(j), str(i))
-    return str(c)
+    r = ""
+    d = dict(zip(map(str, b), str(a)))
+    for x in str(c):
+        r += str(d.get(x, x))
+    return r
 
 
 def list_transliterate_overload_2(a, b, c):
-    for i, j in zip(str(a), b):
-        c = list_replace(i, j, c)
-    return c
+    r = []
+    d = dict(zip(b, str(a)))
+    for x in c:
+        r.append(d.get(x, x))
+    return r
 
 
 def str_transliterate_overload_3(a, b, c):
-    for i, j in zip(str(a), str(b)):
-        c = str(c).replace(str(j), str(i))
-    return str(c)
+    r = ""
+    d = dict(zip(str(b), str(a)))
+    for x in str(c):
+        r += str(d.get(x, x))
+    return r
 
 
 def list_transliterate_overload_3(a, b, c):
-    for i, j in zip(str(a), str(b)):
-        c = list_replace(i, j, c)
-    return c
+    r = []
+    d = dict(zip(str(b), str(a)))
+    for x in c:
+        r.append(d.get(x, x))
+    return r
 
 
 def combinations_with_replacement1(n, x):
@@ -1905,8 +1987,14 @@ def list_wrap(s):
     return [[*s]]
 
 
+def str_transpose(l):
+    return list(map("".join, zip(*l)))
+
+
 def transpose(lst):
     l = []
+    if all(isinstance(j, str) for j in lst):
+        return str_transpose(lst)
     for i in lst:
         if isinstance(i, (list, str)):
             l.append(list(i))
@@ -2034,6 +2122,14 @@ def list_contains(x, y):
     if isinstance(x, list):
         return [list_contains(i, y) for i in x]
     return int(x in y)
+
+
+def swapped_list_contains(y, x):
+    return list_contains(x, y)
+
+
+def swapped_string_contains(y, x):
+    return string_contains(x, y)
 
 
 def list_remove_at_index(n, l):
@@ -2237,10 +2333,14 @@ def randchoice(l):
 
 def square_root(i):
     n = abs(i)
-    x, y = math.sqrt(n), math.isqrt(n)
-    if x == y:
-        return y
-    return x
+    x = math.sqrt(n)
+    try:
+        y = math.isqrt(n)
+        if x == y:
+            return y
+        return x
+    except:
+        return x
 
 
 def every_second_item(s):
@@ -2284,7 +2384,7 @@ def sum_each(l):
 
 
 def all_equal(l):
-    return int(len({*l}) <= 1)
+    return int(len(uniquify_lst(l)) <= 1)
 
 
 def num_all_equal(n):
@@ -2638,7 +2738,7 @@ def centre_list(x):
     l = [*map(str, x)]
     if not l:
         return ""
-    max_len = safe_max_len(l)
+    max_len = max(map(len, l))
     return newline_join([*map(lambda s, m=max_len: s.center(m), l)])
 
 
@@ -2726,6 +2826,14 @@ def nth_prime(n):
         if is_prime(i):
             n -= 1
     return i
+
+
+@try_int_conversion
+def first_n_primes(n):
+    r = []
+    for i in range(n):
+        r.append(nth_prime(i))
+    return r
 
 
 def main_diagonal(lst):
@@ -3023,3 +3131,132 @@ def blank_swapped_digits_canvas_draw(s, n):
 def clear_canvas():
     canvas.canvas.clear()
     return ()
+
+
+def multidimensional_index(x, l):
+    for i, j in enumerate(l):
+        if j == x:
+            return [i]
+        elif isinstance(j, list):
+            r = multidimensional_index(x, j)
+            if r:
+                return [i] + r
+    return []
+
+
+def swapped_multidimensional_index(l, x):
+    return multidimensional_index(x, l)
+
+
+def vectorised_multidimensional_index(x, l):
+    if not isinstance(x, list):
+        return multidimensional_index(x, l)
+    return [*map(lambda i, y=l: vectorised_multidimensional_index(i, y), x)]
+
+
+def absolute_difference(a, b):
+    return abs(b - a)
+
+
+@try_float_conversion
+def logarithm(a, b):
+    return math.log(b, a)
+
+
+@try_float_conversion
+def log10(a):
+    return math.log10(a)
+
+
+@try_float_conversion
+def ln(a):
+    return math.log(a)
+
+
+@try_float_conversion
+def log2(a):
+    return math.log2(a)
+
+
+def split_on(x, l):
+    if isinstance(l, str):
+        x = str(x)
+    r = [l * 0]
+    for i in l:
+        if i == x:
+            r.append(l * 0)
+        else:
+            r[-1] += [i] if isinstance(l, list) else i
+    return r
+
+
+def num_split_on(x, y):
+    return split_on(x, _digits(y))
+
+
+def swapped_split_on(l, x):
+    return split_on(x, l)
+
+
+def perfect_nth(n, a):
+    if isinstance(a, float):
+        if not str(a).endswith(".0"):
+            return 0
+        a = int(a)
+    n = int(n)
+    if n <= 0:
+        return 0
+    if n == 1:
+        return 1
+    l = [i**n for i in inclusive_zero_range(abs(a))]
+    return int(a in l)
+
+
+@try_number_conversion
+def perfect_square(a):
+    return perfect_nth(2, a)
+
+
+@try_number_conversion
+def perfect_cube(a):
+    return perfect_nth(3, a)
+
+
+@try_number_conversion
+def perfect_fourth(a):
+    return perfect_nth(4, a)
+
+
+@try_number_conversion
+def perfect_fifth(a):
+    return perfect_nth(5, a)
+
+
+def ascending(l):
+    try:
+        return int(all(i < j for i, j in zip(l, l[1:])))
+    except:
+        return int(all(i < j for i, j in zip(map(str, l), map(str, l[1:]))))
+
+
+def num_ascending(n):
+    return ascending(_digits(n))
+
+
+def descending(l):
+    try:
+        return int(all(i > j for i, j in zip(l, l[1:])))
+    except:
+        return int(all(i > j for i, j in zip(map(str, l), map(str, l[1:]))))
+
+
+def num_descending(n):
+    return descending(_digits(n))
+
+
+def vectorised_to_binary(n):
+    if isinstance(n, (int, float)):
+        return to_binary(n)
+    elif isinstance(n, str):
+        return n
+    return [vectorised_to_binary(i) for i in n]

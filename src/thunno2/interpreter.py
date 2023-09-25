@@ -139,7 +139,12 @@ vars_dict = {
 """RUN FUNCTION"""
 
 
-def run(code, *, n, iteration_index):
+def run(code, *, context=None, iteration_index=None):
+    if context is None:
+        n = 0
+    else:
+        n = context
+    ctx.context = context
     # while ctx.index < len(code):
     for chars, desc, info in code:
         if desc == "command" or desc == "digraph":
@@ -153,7 +158,6 @@ def run(code, *, n, iteration_index):
             "one character",
             "two characters",
             "three characters",
-            "list",
         ):
             ctx.stack.push(info)
         elif desc == "lowercase alphabetic compression":
@@ -212,6 +216,62 @@ def run(code, *, n, iteration_index):
                     lst.append(c)
                 i += 1
             ctx.stack.push("".join(lst))
+        elif desc == "space autofill lowercase dictionary compression":
+            lst = []
+            i = 0
+            while i < len(info):
+                c = info[i]
+                if c in dictionary.dictionary_codepage:
+                    try:
+                        i += 1
+                        lst.append(dictionary.dictionary_decompress_string(c + info[i]))
+                    except:
+                        pass
+                elif c == "\\":
+                    try:
+                        i += 1
+                        if lst:
+                            lst[-1] += info[i]
+                        else:
+                            lst.append(info[i])
+                    except:
+                        lst.append("\\")
+                else:
+                    if lst:
+                        lst[-1] += c
+                    else:
+                        lst.append(c)
+                i += 1
+            ctx.stack.push(" ".join(lst))
+        elif desc == "space autofill title case dictionary compression":
+            lst = []
+            i = 0
+            while i < len(info):
+                c = info[i]
+                if c in dictionary.dictionary_codepage:
+                    try:
+                        i += 1
+                        lst.append(
+                            dictionary.dictionary_decompress_string(c + info[i]).title()
+                        )
+                    except:
+                        pass
+                elif c == "\\":
+                    try:
+                        i += 1
+                        if lst:
+                            lst[-1] += info[i]
+                        else:
+                            lst.append(info[i])
+                    except:
+                        lst.append("\\")
+                else:
+                    if lst:
+                        lst[-1] += c
+                    else:
+                        lst.append(c)
+                i += 1
+            ctx.stack.push(" ".join(lst))
         elif desc == "one word dictionary compression":
             ctx.stack.push(dictionary.dictionary_decompress_string(info).title())
         elif desc == "two words dictionary compression":
@@ -219,9 +279,12 @@ def run(code, *, n, iteration_index):
                 dictionary.dictionary_decompress_string(info[:2]).title()
                 + dictionary.dictionary_decompress_string(info[2:]).title()
             )
-        elif desc == "compressed number" or desc == "small compressed number":
+        elif desc == "compressed number":
             base255_number = decompress(info, "»")
             ctx.stack.push(base255_number)
+        elif desc == "small compressed number":
+            base256_number = decompress(info)
+            ctx.stack.push(base256_number)
         elif desc == "compressed list":
             base255_number = decompress(info, "¿")
             decompressed_string = to_custom_base_string("0123456789-.,", base255_number)
@@ -465,6 +528,15 @@ def run(code, *, n, iteration_index):
             for i in listify(next(ctx.stack.rmv(1))):
                 print(i)
             ctx.implicit_print = False
+        elif desc == "list":
+            old_stack = Stack(copy.deepcopy(list(ctx.stack).copy()))
+            r = []
+            for j in info:
+                ctx.stack = Stack(copy.deepcopy(list(old_stack).copy()))
+                run(j, context=context, iteration_index=iteration_index)
+                r.append(next(ctx.stack.rmv(1)))
+            ctx.stack = Stack(copy.deepcopy(list(old_stack).copy()))
+            ctx.stack.push(r)
         elif desc == "map":
             a = next(ctx.stack.rmv(1))
             x = listify(a)
@@ -472,8 +544,9 @@ def run(code, *, n, iteration_index):
             old_stack = Stack(copy.deepcopy(list(ctx.stack).copy()))
             for i, j in enumerate(x):
                 ctx.stack = Stack([j] + copy.deepcopy(old_stack))
-                run(info, n=j, iteration_index=i)
+                run(info, context=j, iteration_index=i)
                 r.append(next(ctx.stack.rmv(1)))
+            ctx.stack = Stack(copy.deepcopy(list(old_stack).copy()))
             ctx.stack.push(r)
         elif desc == "filter":
             a = next(ctx.stack.rmv(1))
@@ -482,10 +555,11 @@ def run(code, *, n, iteration_index):
             old_stack = Stack(copy.deepcopy(list(ctx.stack).copy()))
             for i, j in enumerate(x):
                 ctx.stack = Stack([j] + copy.deepcopy(old_stack))
-                run(info, n=j, iteration_index=i)
+                run(info, context=j, iteration_index=i)
                 z = next(ctx.stack.rmv(1))
                 if z:
                     r.append(j)
+            ctx.stack = Stack(copy.deepcopy(list(old_stack).copy()))
             ctx.stack.push(r)
         elif desc == "sort by":
             a = next(ctx.stack.rmv(1))
@@ -494,9 +568,10 @@ def run(code, *, n, iteration_index):
             old_stack = Stack(copy.deepcopy(list(ctx.stack).copy()))
             for i, j in enumerate(x):
                 ctx.stack = Stack([j] + copy.deepcopy(old_stack))
-                run(info, n=j, iteration_index=i)
+                run(info, context=j, iteration_index=i)
                 z = next(ctx.stack.rmv(1))
                 r.append((j, z))
+            ctx.stack = Stack(copy.deepcopy(list(old_stack).copy()))
             try:
                 sorted_list = sorted(r, key=lambda t: t[-1])
                 ctx.stack.push([p for p, q in sorted_list])
@@ -509,9 +584,10 @@ def run(code, *, n, iteration_index):
             old_stack = Stack(copy.deepcopy(list(ctx.stack).copy()))
             for i, j in enumerate(x):
                 ctx.stack = Stack([j] + copy.deepcopy(old_stack))
-                run(info, n=j, iteration_index=i)
+                run(info, context=j, iteration_index=i)
                 z = next(ctx.stack.rmv(1))
                 r.append((j, z))
+            ctx.stack = Stack(copy.deepcopy(list(old_stack).copy()))
             try:
                 d = []
                 for val, key in r:
@@ -529,15 +605,27 @@ def run(code, *, n, iteration_index):
             old_stack = Stack(copy.deepcopy(list(ctx.stack).copy()))
             i = 0
             while True:
-                ctx.stack = Stack(copy.deepcopy(old_stack))
-                run(info, n=r[-1], iteration_index=i)
+                run(info, context=r[-1], iteration_index=i)
                 k = (ctx.stack + ctx.other_il + [0])[0]
-                print(k)
                 r.append(k)
                 if r[-1] == r[-2]:
                     break
                 i += 1
+            ctx.stack = Stack(copy.deepcopy(list(old_stack).copy()))
             ctx.stack.push(r[1:])
+        elif desc == "while unique":
+            r = []
+            old_stack = Stack(copy.deepcopy(list(ctx.stack).copy()))
+            i = 0
+            while True:
+                run(info, context=([0] + r)[-1], iteration_index=i)
+                k = (ctx.stack + ctx.other_il + [0])[0]
+                if k in r:
+                    break
+                r.append(k)
+                i += 1
+            ctx.stack = Stack(copy.deepcopy(list(old_stack).copy()))
+            ctx.stack.push(r)
         elif desc == "first n integers":
             a = next(ctx.stack.rmv(1))
             try:
@@ -550,11 +638,47 @@ def run(code, *, n, iteration_index):
             while len(r) < x:
                 ctx.stack = Stack(copy.deepcopy(old_stack))
                 ctx.stack.push(i)
-                run(info, n=i, iteration_index=i - 1)
+                run(info, context=i, iteration_index=i - 1)
                 k = next(ctx.stack.rmv(1))
                 if k:
                     r.append(i)
                 i += 1
+            ctx.stack = Stack(copy.deepcopy(list(old_stack).copy()))
+            ctx.stack.push(r)
+        elif desc == "first integer":
+            a = next(ctx.stack.rmv(1))
+            try:
+                x = int(a)
+            except:
+                x = 1
+            old_stack = Stack(copy.deepcopy(list(ctx.stack).copy()))
+            i = x
+            j = 0
+            while True:
+                ctx.stack = Stack(copy.deepcopy(old_stack))
+                ctx.stack.push(i)
+                run(info, context=i, iteration_index=j)
+                k = next(ctx.stack.rmv(1))
+                if k:
+                    r = i
+                    break
+                i += sign(x) or 1
+                j += 1
+            ctx.stack = Stack(copy.deepcopy(list(old_stack).copy()))
+            ctx.stack.push(r)
+        elif desc == "first positive integer":
+            old_stack = Stack(copy.deepcopy(list(ctx.stack).copy()))
+            i = 1
+            while True:
+                ctx.stack = Stack(copy.deepcopy(old_stack))
+                ctx.stack.push(i)
+                run(info, context=i, iteration_index=i - 1)
+                k = next(ctx.stack.rmv(1))
+                if k:
+                    r = i
+                    break
+                i += 1
+            ctx.stack = Stack(copy.deepcopy(list(old_stack).copy()))
             ctx.stack.push(r)
         elif desc == "cumulative reduce by":
             a = next(ctx.stack.rmv(1))
@@ -566,8 +690,9 @@ def run(code, *, n, iteration_index):
                     ctx.stack = Stack(copy.deepcopy(old_stack))
                     ctx.stack.push(r[-1])
                     ctx.stack.push(j)
-                    run(info, n=j, iteration_index=i)
+                    run(info, context=j, iteration_index=i)
                     r.append(next(ctx.stack.rmv(1)))
+                ctx.stack = Stack(copy.deepcopy(list(old_stack).copy()))
                 ctx.stack.push(r)
             else:
                 ctx.stack.push([])
@@ -632,8 +757,9 @@ def run(code, *, n, iteration_index):
                     ctx.stack = Stack(copy.deepcopy(old_stack))
                     ctx.stack.push(r[-1])
                     ctx.stack.push(j)
-                    run(info, n=j, iteration_index=i)
+                    run(info, context=j, iteration_index=i)
                     r.append(next(ctx.stack.rmv(1)))
+                ctx.stack = Stack(copy.deepcopy(list(old_stack).copy()))
                 ctx.stack.push(r[-1])
             else:
                 ctx.stack.push([])
@@ -643,61 +769,63 @@ def run(code, *, n, iteration_index):
             for i, j in enumerate(x):
                 if not isinstance(a, (int, float)):
                     ctx.stack.push(j)
-                run(info, n=j, iteration_index=i)
+                run(info, context=j, iteration_index=i)
         elif desc == "while loop":
             cond, body = info
             i = 0
             while True:
                 old_stack = Stack(copy.deepcopy(list(ctx.stack).copy()))
-                run(cond, n=0, iteration_index=i)
+                run(cond, context=context, iteration_index=i)
                 z = next(ctx.stack.rmv(1))
                 ctx.stack = Stack(copy.deepcopy(old_stack))
                 if not z:
                     break
-                run(body, n=0, iteration_index=i)
+                run(body, context=context, iteration_index=i)
+                i += 1
+        elif desc == "forever loop":
+            i = 0
+            while True:
+                run(info, context=context, iteration_index=i)
                 i += 1
         elif desc == "if statement":
             if_true, if_false = info
             a = next(ctx.stack.rmv(1))
             if a:
-                run(if_true, n=0, iteration_index=1)
+                run(if_true, context=context, iteration_index=1)
             else:
-                run(if_false, n=0, iteration_index=0)
+                run(if_false, context=context, iteration_index=0)
         elif desc == "execute without popping":
             if info != Void:
                 values = info(pop=False)
                 for value in values:
                     ctx.stack.push(value)
         elif desc == "pair apply":
-            a = next(ctx.stack.rmv(1))
             old_stack = Stack(copy.deepcopy(list(ctx.stack).copy()))
             r = []
             f1, f2 = info
-            ctx.stack.push(a)
             k = f1()
             if k:
                 r.append(k[-1])
             ctx.stack = Stack(copy.deepcopy(old_stack))
-            ctx.stack.push(a)
             k = f2()
             if k:
                 r.append(k[-1])
+            ctx.stack = Stack(copy.deepcopy(old_stack))
             ctx.stack.push(r)
-        elif desc == "two function map":
-            a = next(ctx.stack.rmv(1))
+        elif desc == "pair apply dump":
             old_stack = Stack(copy.deepcopy(list(ctx.stack).copy()))
             r = []
             f1, f2 = info
-            x = listify(a)
-            for i in x:
-                ctx.stack = Stack(copy.deepcopy(list(old_stack).copy()))
-                ctx.stack.push(i)
-                for j in f1():
-                    ctx.stack.push(j)
-                for k in f2():
-                    ctx.stack.push(k)
-                r.append(next(ctx.stack.rmv(1)))
-            ctx.stack.push(r)
+            k = f1()
+            if k:
+                r.append(k[-1])
+            ctx.stack = Stack(copy.deepcopy(old_stack))
+            k = f2()
+            if k:
+                r.append(k[-1])
+            ctx.stack = Stack(copy.deepcopy(old_stack))
+            for a in r:
+                ctx.stack.push(a)
         elif desc == "recursive environment":
             a = next(ctx.stack.rmv(1))
             if isinstance(a, list):
@@ -712,11 +840,125 @@ def run(code, *, n, iteration_index):
                 ctx.stack = Stack(copy.deepcopy(list(old_stack).copy()))
                 for j in x:
                     ctx.stack.push(j)
-                run(info, n=([0] + x)[-1], iteration_index=k)
+                run(info, context=([0] + x)[-1], iteration_index=k)
                 y = next(ctx.stack.rmv(1))
                 print(y)
                 x.append(y)
                 k += 1
+        elif desc == "apply to every nth item":
+            a = next(ctx.stack.rmv(1))
+            try:
+                a = int(a)
+            except:
+                try:
+                    a = len(a)
+                except:
+                    a = 2
+            b = listify(next(ctx.stack.rmv(1)))
+            old_stack = Stack(copy.deepcopy(list(ctx.stack).copy()))
+            r = []
+            for i, j in enumerate(b):
+                if i % a == 0:
+                    ctx.stack = Stack(copy.deepcopy(list(old_stack).copy()))
+                    ctx.stack.push(j)
+                    for k in info():
+                        r.append(k)
+                else:
+                    r.append(j)
+            ctx.stack.push(r)
+        elif desc == "rotate stack left":
+            ctx.stack = Stack(rotate_left_once(ctx.stack))
+        elif desc == "rotate stack right":
+            ctx.stack = Stack(rotate_right_once(ctx.stack))
+        elif desc == "reverse stack":
+            ctx.stack = Stack(ctx.stack[::-1])
+        elif desc == "adjacent group by":
+            a = next(ctx.stack.rmv(1))
+            x = listify(a)
+            r = []
+            old_stack = Stack(copy.deepcopy(list(ctx.stack).copy()))
+            for i, j in enumerate(x):
+                ctx.stack = Stack([j] + copy.deepcopy(old_stack))
+                run(info, context=j, iteration_index=i)
+                z = next(ctx.stack.rmv(1))
+                r.append((j, z))
+            try:
+                d = []
+                last = None
+                for val, key in r:
+                    if key == last:
+                        d[-1].append(val)
+                    else:
+                        d.append([val])
+                    last = key
+                ctx.stack.push(d)
+            except:
+                ctx.stack.push(x)
+        elif desc == "single function adjacent group by":
+            a = next(ctx.stack.rmv(1))
+            func = info
+            if func != Void:
+                x = listify(a)
+                group_by = []
+                old_stack = Stack(copy.deepcopy(list(ctx.stack).copy()))
+                for i in x:
+                    ctx.stack = Stack(copy.deepcopy(list(old_stack).copy()))
+                    ctx.stack.push(i)
+                    f = func()
+                    if not f:
+                        group_by.append((i, i))
+                    else:
+                        group_by.append((i, f[-1]))
+                try:
+                    d = []
+                    last = None
+                    for val, key in group_by:
+                        if key == last:
+                            d[-1].append(val)
+                        else:
+                            d.append([val])
+                        last = key
+                    ctx.stack.push(d)
+                except:
+                    ctx.stack.push(x)
+        elif desc == "nmap":
+            a = next(ctx.stack.rmv(1))
+            try:
+                a = abs(int(a)) or 1
+            except:
+                a = len(a)
+            x = [listify(next(ctx.stack.rmv(1))) for _ in range(a)]
+            r = []
+            old_stack = Stack(copy.deepcopy(list(ctx.stack).copy()))
+            for i, l in enumerate(zip(*x)):
+                ctx.stack = Stack([*l] + copy.deepcopy(old_stack))
+                run(info, context=[*l], iteration_index=i)
+                r.append(next(ctx.stack.rmv(1)))
+            ctx.stack = Stack(copy.deepcopy(list(old_stack).copy()))
+            ctx.stack.push(r)
+        elif desc == "2map":
+            a = listify(next(ctx.stack.rmv(1)))
+            b = listify(next(ctx.stack.rmv(1)))
+            r = []
+            old_stack = Stack(copy.deepcopy(list(ctx.stack).copy()))
+            for i, (x, y) in enumerate(zip(a, b)):
+                ctx.stack = Stack([x, y] + copy.deepcopy(old_stack))
+                run(info, context=[x, y], iteration_index=i)
+                r.append(next(ctx.stack.rmv(1)))
+            ctx.stack = Stack(copy.deepcopy(list(old_stack).copy()))
+            ctx.stack.push(r)
+        elif desc == "3map":
+            a = listify(next(ctx.stack.rmv(1)))
+            b = listify(next(ctx.stack.rmv(1)))
+            c = listify(next(ctx.stack.rmv(1)))
+            r = []
+            old_stack = Stack(copy.deepcopy(list(ctx.stack).copy()))
+            for i, (x, y, z) in enumerate(zip(a, b, c)):
+                ctx.stack = Stack([x, y, z] + copy.deepcopy(old_stack))
+                run(info, context=[x, y, z], iteration_index=i)
+                r.append(next(ctx.stack.rmv(1)))
+            ctx.stack = Stack(copy.deepcopy(list(old_stack).copy()))
+            ctx.stack.push(r)
         else:
             if ctx.warnings:
                 print("TRACEBACK: [UNRECOGNISED TOKEN]", file=sys.stderr)
@@ -730,7 +972,7 @@ def test(cod, inp=(), stk=(), warn=True):
     ctx.other_il = list(inp)
     ctx.warnings = warn
     tokenised = tokenise(cod)[1]
-    run(tokenised, n=0, iteration_index=0)
+    run(tokenised, context=None, iteration_index=0)
     print(ctx.stack)
     if ctx.implicit_print:
         print(ctx.stack[0])

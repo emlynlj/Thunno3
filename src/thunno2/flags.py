@@ -47,6 +47,9 @@ def process_input_flags(flags, inputs):
                 new_input.append(inp)
         inputs = new_input[:]
 
+    if "ḃ" in flags:
+        inputs = [helpers.vectorised_to_binary(inp) for inp in inputs]
+
     if "+" in flags:
         new_input = []
         for inp in inputs:
@@ -64,6 +67,15 @@ def process_input_flags(flags, inputs):
             else:
                 new_input.append(inp)
         inputs = new_input[:]
+
+    if "c" in flags:
+        commands.ctx.vyxal_mode = True
+
+    if "r" in flags:
+        commands.ctx.reverse = True
+
+    if "d" in flags:
+        commands.ctx.pop = False
 
     return inputs
 
@@ -96,6 +108,12 @@ def process_output_flags(flags, do_print=True):
         if "s" == flag:
             commands.ctx.stack.push(helpers.it_sum(commands.ctx.stack))
 
+        if "P" == flag:
+            commands.ctx.stack.push(commands.commands["p"]()[0])
+
+        if "p" == flag:
+            commands.ctx.stack.push(helpers.product(commands.ctx.stack))
+
         if "L" == flag:
             commands.ctx.stack.push(commands.commands["l"]()[0])
 
@@ -118,6 +136,9 @@ def process_output_flags(flags, do_print=True):
                     except:
                         pass
                 commands.ctx.stack.push(r)
+
+        if "ḃ" in flags:
+            commands.ctx.stack.push(commands.commands["Ḃ"]()[0])
 
         if "G" == flag:
             commands.ctx.stack.push(commands.commands["G"]()[0])
@@ -176,7 +197,7 @@ def run(flags, code, inputs):
             commands.ctx.og_input_list = new_inputs.copy()
             commands.ctx.other_il = new_inputs.copy()
             print(line, "--> ", end="")
-            interpreter.run(code, n=0, iteration_index=0)
+            interpreter.run(code, context=None, iteration_index=0)
             process_output_flags(new_flags)
         return None
 
@@ -205,8 +226,9 @@ def run(flags, code, inputs):
                 continue
             commands.ctx.og_input_list = new_inputs.copy()
             commands.ctx.other_il = new_inputs.copy()
+            commands.ctx.stack = commands.Stack()
             print(line, "--> ", end="")
-            interpreter.run(code, n=0, iteration_index=0)
+            interpreter.run(code, context=None, iteration_index=0)
             process_output_flags(new_flags, False)
             actual_output = next(commands.ctx.stack.rmv(1))
             print(actual_output, end="\t")
@@ -219,5 +241,5 @@ def run(flags, code, inputs):
     inputs = process_input_flags(flags, inputs)
     commands.ctx.og_input_list = inputs.copy()
     commands.ctx.other_il = inputs.copy()
-    interpreter.run(code, n=0, iteration_index=0)
+    interpreter.run(code, context=None, iteration_index=0)
     process_output_flags(flags)
